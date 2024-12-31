@@ -3,3 +3,4 @@ python-dotenv==1.0.1
 django-crispy-forms==2.3
 crispy-bootstrap4==2024.10
 psycopg2==2.9.10
+gunicorn
