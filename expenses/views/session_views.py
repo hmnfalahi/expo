@@ -26,7 +26,7 @@ def create_session(request, group_id):
                     session.save()
                     form.save_m2m()
                     messages.success(request, 'Session created successfully!')
-                    return redirect('expenses:group_detail', group_id=group.id)
+                    return redirect('expenses:session_detail', session_id=session.id)
             except Exception as e:
                 messages.error(request, f'Error creating session: {str(e)}')
                 return redirect('expenses:group_detail', group_id=group.id)
@@ -139,14 +139,13 @@ def delete_session(request, session_id):
         return JsonResponse({'error': 'This session has ended. No further changes can be made.'}, status=400)
     group = session.group
     
-    # Check if user is authorized (group creator or session creator)
     if request.user != group.created_by and request.user != session.created_by:
         return JsonResponse({'error': 'Unauthorized'}, status=403)
     
     try:
         session.delete()
         messages.success(request, 'Session deleted successfully')
-        return JsonResponse({'success': True, 'redirect_url': f'/group/{group.id}/'})
+        return JsonResponse({'success': True, 'redirect_url': f'/groups/{group.id}/'})
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=400)
 

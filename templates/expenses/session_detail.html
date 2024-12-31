@@ -364,7 +364,7 @@ function addMemberToSession() {
     }
 
     const sessionId = '{{ session.id }}';
-    fetch(`/session/${sessionId}/add-member/${memberId}/`, {
+    fetch(`/sessions/${sessionId}/add-member/${memberId}/`, {
         method: 'POST',
         headers: {
             'X-CSRFToken': '{{ csrf_token }}',
@@ -395,7 +395,7 @@ function confirmDeleteExpense(expenseId) {
 function deleteExpense() {
     if (!expenseToDelete) return;
 
-    fetch(`/expense/${expenseToDelete}/delete/`, {
+    fetch(`/expenses/${expenseToDelete}/delete/`, {
         method: 'POST',
         headers: {
             'X-CSRFToken': '{{ csrf_token }}',

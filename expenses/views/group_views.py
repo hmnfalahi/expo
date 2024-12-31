@@ -75,7 +75,7 @@ def group_detail(request, group_id):
         'balances': balances,
         'title': f'Group: {group.name}',
         'is_creator': request.user == group.created_by,
-        'join_url': request.build_absolute_uri(f'/join/{group.join_code}/')
+        'join_url': request.build_absolute_uri(f'/groups/{group.join_code}/join')
     }
     
     return render(request, 'expenses/group_detail.html', context)
