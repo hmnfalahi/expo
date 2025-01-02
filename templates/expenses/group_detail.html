@@ -124,7 +124,7 @@
         <div class="card mb-4">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <h5 class="mb-0">Sessions</h5>
-                <a href="{% url 'expenses:create_session' group.id %}" class="btn btn-sm btn-primary">
+                <a href="{% url 'expenses:create_session' group_id=group.id %}" class="btn btn-sm btn-primary">
                     <i class="bi bi-plus"></i> New Session
                 </a>
             </div>

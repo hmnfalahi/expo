@@ -1,6 +1,21 @@
-from .group_views import dashboard, create_group, group_detail, join_group, remove_member, regenerate_join_code
-from .expense_views import add_expense, update_expense
-from .auth_views import register
-from .session_views import create_session, session_detail, add_member_to_session, remove_member_from_session
+from .expense_views import AddExpenseView, DeleteExpenseView, UpdateExpenseView, ExpenseDetailView
+from .session_views import (
+    SessionCreateView, SessionDetailView, AddMemberToSessionView, 
+    RemoveMemberFromSessionView, LeaveSessionView, DeleteSessionView, 
+    UpdateSessionView, EndSessionView
+)
+from .group_views import (
+    DashboardView, GroupCreateView, GroupDetailView, JoinGroupView, 
+    RemoveMemberView, RegenerateJoinCodeView, LeaveGroupView, 
+    UpdateGroupView, DeleteGroupView
+)
 
-__all__ = ['dashboard', 'create_group', 'group_detail', 'join_group', 'remove_member', 'regenerate_join_code', 'add_member_to_session', 'remove_member_from_session', 'add_expense', 'update_expense', 'register', 'create_session', 'session_detail']
+__all__ = [
+    'add_expense', 'update_expense', 'expense_detail', 'delete_expense', 'register',
+    'SessionCreateView', 'SessionDetailView', 'AddMemberToSessionView', 
+    'RemoveMemberFromSessionView', 'LeaveSessionView', 'DeleteSessionView', 
+    'UpdateSessionView', 'EndSessionView', 'DashboardView', 'GroupCreateView', 
+    'GroupDetailView', 'JoinGroupView', 'RemoveMemberView', 'RegenerateJoinCodeView', 
+    'LeaveGroupView', 'UpdateGroupView', 'DeleteGroupView', 
+    'AddExpenseView', 'DeleteExpenseView', 'UpdateExpenseView', 'ExpenseDetailView'
+]

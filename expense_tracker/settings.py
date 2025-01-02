@@ -13,7 +13,10 @@ SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-your-secret-key-here')
 DEBUG = os.getenv('DEBUG', 'True') == 'True'
 
 ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1,0.0.0.0').split(',')
-CSRF_TRUSTED_ORIGINS = ['https://c61b-109-120-177-3.ngrok-free.app']
+
+trusted_origins = os.getenv('CSRF_TRUSTED_ORIGINS')
+if trusted_origins:
+    CSRF_TRUSTED_ORIGINS = trusted_origins.split(',')
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -60,11 +63,11 @@ WSGI_APPLICATION = 'expense_tracker.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql_psycopg2',
-        'NAME': 'expo',
-        'USER': 'postgres',
-        'PASSWORD': 'postgres',
-        'HOST': 'localhost',
-        'PORT': '5432',
+        'NAME': os.getenv('POSTGRES_DB', 'expo'),
+        'USER': os.getenv('POSTGRES_USER', 'postgres'),
+        'PASSWORD': os.getenv('POSTGRES_PASSWORD', 'postgres'),
+        'HOST': os.getenv('POSTGRES_HOST', 'localhost'),
+        'PORT': os.getenv('POSTGRES_PORT', '5432'),
     }
 }
 

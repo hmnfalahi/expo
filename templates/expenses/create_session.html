@@ -12,7 +12,7 @@
                     {{ form|crispy }}
                     <div class="mt-3">
                         <button type="submit" class="btn btn-primary">Create Session</button>
-                        <a href="{% url 'expenses:group_detail' group.id %}" class="btn btn-secondary">Cancel</a>
+                        <a href="{% url 'expenses:group_detail' pk=group.id %}" class="btn btn-secondary">Cancel</a>
                     </div>
                 </form>
             </div>
