@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import group_views, session_views, expense_views
+from .views import group_views, session_views, expense_views, settlement_views
 from .views.account_views import send_verification_email
 
 app_name = 'expenses'
@@ -27,4 +27,7 @@ urlpatterns = [
     path('expenses/<int:pk>/', expense_views.ExpenseDetailView.as_view(), name='expense_detail'),
     path('expenses/<int:pk>/delete/', expense_views.DeleteExpenseView.as_view(), name='delete_expense'),
     path('accounts/send-verification/', send_verification_email, name='send_verification'),
+    path('settlements/pay/', settlement_views.SubmitPaymentView.as_view(), name='submit_payment'),
+    path('settlements/<int:settlement_id>/accept/', settlement_views.AcceptPaymentView.as_view(), name='accept_payment'),
+    path('settlements/<int:settlement_id>/details/', settlement_views.PaymentDetailsView.as_view(), name='payment_details'),
 ]

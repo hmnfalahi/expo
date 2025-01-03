@@ -11,7 +11,7 @@ from django.contrib.auth.models import User  # Add this import
 
 from ..models import Group, Session
 from ..forms import SessionForm
-from ..services.balance_calculator import calculate_balances
+from ..services.balance_calculator import calculate_balances, calculate_settlements  # Update import
 from ..mixins import EmailVerificationRequiredMixin
 
 
@@ -68,7 +68,10 @@ class SessionDetailView(EmailVerificationRequiredMixin, LoginRequiredMixin, Deta
             return redirect('expenses:dashboard')
         context['group'] = group
         context['expenses'] = session.session_expenses.all().order_by('-date')
-        context['balances'] = calculate_balances(session)
+        balances = calculate_balances(session)
+        context['balances'] = balances
+        if session.ended:
+            context['settlements'] = calculate_settlements(balances)
         context['is_creator'] = self.request.user == session.created_by
         return context
 

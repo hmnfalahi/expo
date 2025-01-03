@@ -79,10 +79,62 @@
                         <i class="bi bi-trash me-1"></i>Delete
                     </button>
                 {% endif %}
+                {% if user in session.members.all and not is_creator %}
+                    <button class="btn btn-danger" onclick="leaveSession()" 
+                            {% if balances|get_item:user != 0 %}disabled title="Cannot leave session with non-zero balance"{% endif %}>
+                        Leave Session
+                    </button>
+                {% endif %}
             {% endif %}
         </div>
     </div>
 </div>
+
+{% if session.ended %}
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card border-warning">
+            <div class="card-header bg-warning text-dark">
+                <h5 class="mb-0">
+                    <i class="bi bi-info-circle me-2"></i>
+                    Session Summary
+                </h5>
+            </div>
+            <div class="card-body">
+                <h6 class="mb-3">Settlement Instructions:</h6>
+                {% if settlements %}
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>From</th>
+                                    <th>To</th>
+                                    <th>Amount</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for settlement in settlements %}
+                                    <tr>
+                                        <td>{{ settlement.from_user.username }}</td>
+                                        <td>{{ settlement.to_user.username }}</td>
+                                        <td>${{ settlement.amount }}</td>
+                                        <td>
+                                            <button class="btn btn-info btn-sm" onclick="showPaymentDetailsModal('{{ settlement.id }}')">Payment Details</button>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <p class="mb-0">No settlements needed. All balances are settled!</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
 
 <div class="row">
     <div class="col-md-12">
@@ -137,7 +189,13 @@
     <div class="col-md-12">
         <div class="card mb-4">
             <div class="card-header">
-                <h5 class="mb-0">Expenses</h5>
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <h5 class="mb-0">Expenses</h5>
+                </div>
+                <div class="alert alert-info py-2 mb-0 d-flex align-items-center">
+                    <i class="bi bi-lightbulb me-2"></i>
+                    <small>Click on expense to view details and actions</small>
+                </div>
             </div>
             <div class="card-body">
                 <div class="table-responsive">
@@ -148,7 +206,6 @@
                                 <th>Amount</th>
                                 <th>Paid By</th>
                                 <th>Date</th>
-                                <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -158,21 +215,10 @@
                                     <td>${{ expense.amount }}</td>
                                     <td>{{ expense.paid_by.username }}</td>
                                     <td>{{ expense.date }}</td>
-                                    <td>
-                                        <div class="d-flex gap-2">
-                                            {% if expense.paid_by == user and not session.ended %}
-                                                <a href="{% url 'expenses:update_expense' expense.id %}" class="btn btn-sm btn-secondary">Update</a>
-                                                <button class="btn btn-sm btn-danger" onclick="event.stopPropagation(); confirmDeleteExpense({{ expense.id }})">Delete</button>
-                                            {% else %}
-                                                <button class="btn btn-sm btn-secondary" disabled>Update</button>
-                                                <button class="btn btn-sm btn-danger" disabled>Delete</button>
-                                            {% endif %}
-                                        </div>
-                                    </td>
                                 </tr>
                             {% empty %}
                                 <tr>
-                                    <td colspan="5" class="text-center">No expenses yet.</td>
+                                    <td colspan="4" class="text-center">No expenses yet.</td>
                                 </tr>
                             {% endfor %}
                         </tbody>
@@ -280,6 +326,42 @@
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                 <button type="button" class="btn btn-danger" onclick="deleteSession()">Delete</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Payment Details Modal -->
+<div class="modal fade" id="paymentDetailsModal" tabindex="-1" aria-labelledby="paymentDetailsModalLabel">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="paymentDetailsModalLabel">Payment Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="paymentDetailsContent"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Payment Modal -->
+<div class="modal fade" id="paymentModal" tabindex="-1" aria-labelledby="paymentModalLabel">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="paymentModalLabel">Submit Payment</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="paymentForm">
+                    <div class="mb-3">
+                        <label for="paymentDocument" class="form-label">Upload Payment Document</label>
+                        <input type="file" class="form-control" id="paymentDocument" required>
+                    </div>
+                    <button type="button" class="btn btn-primary" onclick="submitPayment()">Submit</button>
+                </form>
             </div>
         </div>
     </div>
@@ -495,6 +577,99 @@ function endSession() {
     .catch(error => {
         console.error('Error:', error);
         showMessage('Failed to end session', 'danger');
+    });
+}
+
+let settlementToPay = null;
+
+function showPaymentDetailsModal(settlementId) {
+    fetch(`/settlements/${settlementId}/details/`)
+        .then(response => response.json())
+        .then(data => {
+            const content = document.getElementById('paymentDetailsContent');
+            if (data.exists) {
+                content.innerHTML = `
+                    <p><strong>From:</strong> ${data.from_user}</p>
+                    <p><strong>To:</strong> ${data.to_user}</p>
+                    <p><strong>Amount:</strong> $${data.amount}</p>
+                    <p><strong>Status:</strong> ${data.status}</p>
+                    ${data.document ? `<p><strong>Document:</strong> <a href="${data.document}" target="_blank">View Document</a></p>` : ''}
+                    ${data.status === 'pending' && data.to_user_id === '{{ user.id }}' ? `<button class="btn btn-success" onclick="acceptPayment(${settlementId})">Accept</button>` : ''}
+                `;
+            } else {
+                content.innerHTML = `<button class="btn btn-primary" onclick="showPaymentModal(${settlementId})">Pay</button>`;
+            }
+            const paymentDetailsModal = new bootstrap.Modal(document.getElementById('paymentDetailsModal'));
+            paymentDetailsModal.show();
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showMessage('Failed to load payment details', 'danger');
+        });
+}
+
+function showPaymentModal(settlementId) {
+    settlementToPay = settlementId;
+    const paymentModal = new bootstrap.Modal(document.getElementById('paymentModal'));
+    paymentModal.show();
+}
+
+function submitPayment() {
+    const paymentDocument = document.getElementById('paymentDocument').files[0];
+    if (!paymentDocument) {
+        showMessage('Please upload a payment document.', 'danger');
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append('document', paymentDocument);
+    formData.append('from_user', '{{ user.id }}');
+    formData.append('to_user', settlementToPay.to_user);
+    formData.append('amount', settlementToPay.amount);
+
+    fetch(`/settlements/pay/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': '{{ csrf_token }}',
+        },
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            showMessage(data.error || 'Failed to submit payment', 'danger');
+        }
+        const paymentModal = bootstrap.Modal.getInstance(document.getElementById('paymentModal'));
+        paymentModal.hide();
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showMessage('Failed to submit payment', 'danger');
+        const paymentModal = bootstrap.Modal.getInstance(document.getElementById('paymentModal'));
+        paymentModal.hide();
+    });
+}
+
+function acceptPayment(settlementId) {
+    fetch(`/settlements/${settlementId}/accept/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': '{{ csrf_token }}',
+        },
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            showMessage(data.error || 'Failed to accept payment', 'danger');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showMessage('Failed to accept payment', 'danger');
     });
 }
 </script>
