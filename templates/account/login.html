@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% load crispy_forms_tags %}
+{% load socialaccount %}
 
 {% block breadcrumb %}{% endblock %}
 
@@ -9,11 +10,16 @@
         <div class="card">
             <div class="card-body">
                 <h2 class="card-title text-center mb-4">Login</h2>
-                <form method="post">
+                <form method="post" action="{% url 'account_login' %}">
                     {% csrf_token %}
                     {{ form|crispy }}
                     <button type="submit" class="btn btn-primary w-100">Login</button>
                 </form>
+                <div class="text-center mt-3">
+                    <a href="{% provider_login_url 'google' %}" class="btn btn-danger w-100">
+                        <i class="bi bi-google me-2"></i> Login with Google
+                    </a>
+                </div>
             </div>
         </div>
     </div>

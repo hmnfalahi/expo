@@ -1,0 +1,43 @@
+{% extends 'base.html' %}
+{% load i18n %}
+
+{% block breadcrumb %}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-body text-center">
+                <i class="bi bi-envelope-check display-1 text-primary mb-4"></i>
+                <h2 class="card-title">Verify Your Email</h2>
+                {% if user.is_authenticated %}
+                    <p class="card-text">
+                        We've sent a verification email to <strong>{{ user.email }}</strong>.<br>
+                        Please check your inbox and click the verification link to continue.
+                    </p>
+                    <div class="mt-4">
+                        <form method="post" action="{% url 'expenses:send_verification' %}" class="d-inline">
+                            {% csrf_token %}
+                            <input type="hidden" name="next" value="{{ request.path }}">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-arrow-repeat me-2"></i>{% trans "Resend Verification Email" %}
+                            </button>
+                        </form>
+                        <a href="{% url 'account_manage' %}" class="btn btn-outline-secondary ms-2">
+                            <i class="bi bi-person-gear me-2"></i>{% trans "Account Management" %}
+                        </a>
+                    </div>
+                {% else %}
+                    <div class="alert alert-warning">
+                        <i class="bi bi-exclamation-triangle me-2"></i>
+                        Your session has expired. Please log in again.
+                    </div>
+                    <a href="{% url 'account_login' %}" class="btn btn-primary">
+                        <i class="bi bi-box-arrow-in-right me-2"></i>{% trans "Log In" %}
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

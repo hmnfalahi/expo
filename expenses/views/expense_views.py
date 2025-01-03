@@ -10,9 +10,10 @@ from django.utils.decorators import method_decorator
 
 from ..models import Group, Session, Expense
 from ..forms import ExpenseForm
+from ..mixins import EmailVerificationRequiredMixin
 
 
-class AddExpenseView(LoginRequiredMixin, CreateView):
+class AddExpenseView(EmailVerificationRequiredMixin, LoginRequiredMixin, CreateView):
     model = Expense
     form_class = ExpenseForm
     template_name = 'expenses/add_expense.html'
@@ -53,17 +54,16 @@ class AddExpenseView(LoginRequiredMixin, CreateView):
         return context
 
 
-class UpdateExpenseView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
+class UpdateExpenseView(EmailVerificationRequiredMixin, LoginRequiredMixin, UserPassesTestMixin, UpdateView):
     model = Expense
     form_class = ExpenseForm
     template_name = 'expenses/update_expense.html'
 
     def dispatch(self, request, *args, **kwargs):
         self.expense = get_object_or_404(Expense, id=self.kwargs['pk'])
-        self.session = self.expense.session
-        if self.session.ended:
-            messages.error(request, 'This session has ended. No further changes can be made.')
-            return redirect('expenses:session_detail', pk=self.session.id)
+        if self.expense.session.ended:
+            messages.error(request, 'Cannot modify expenses in an ended session.')
+            return redirect('expenses:session_detail', pk=self.expense.session.id)
         return super().dispatch(request, *args, **kwargs)
 
     def form_valid(self, form):
@@ -88,18 +88,17 @@ class UpdateExpenseView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
         return self.request.user == self.expense.paid_by
 
 
-class ExpenseDetailView(LoginRequiredMixin, DetailView):
+class ExpenseDetailView(EmailVerificationRequiredMixin, LoginRequiredMixin, DetailView):
     model = Expense
     template_name = 'expenses/expense_detail.html'
     context_object_name = 'expense'
 
 
-class DeleteExpenseView(LoginRequiredMixin, UserPassesTestMixin, View):
+class DeleteExpenseView(EmailVerificationRequiredMixin, LoginRequiredMixin, UserPassesTestMixin, View):
     def post(self, request, pk):
         expense = get_object_or_404(Expense, id=pk)
-        session = expense.session
-        if session.ended:
-            return JsonResponse({'success': False, 'error': 'This session has ended. No further changes can be made.'})
+        if expense.session.ended:
+            return JsonResponse({'error': 'Cannot delete expenses in an ended session.'}, status=403)
         if request.user != expense.paid_by:
             return JsonResponse({'success': False, 'error': 'You are not authorized to delete this expense.'})
 

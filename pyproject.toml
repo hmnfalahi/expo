@@ -1,0 +1,22 @@
+[tool.poetry]
+name = "expo"
+version = "0.1.0"
+description = "A Django application for tracking shared expenses"
+authors = ["Your Name <your.email@example.com>"]
+packages = []
+
+[tool.poetry.dependencies]
+python = "^3.12"
+Django = "^5.1.4"
+python-dotenv = "^1.0.1"
+django-crispy-forms = "^2.3"
+crispy-bootstrap4 = "^2024.10"
+psycopg2 = "^2.9.10"
+gunicorn = "^21.2.0"
+django-allauth = "^0.65.0"
+PyJWT = "^2.8.0"
+requests
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"

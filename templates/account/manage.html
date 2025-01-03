@@ -1,0 +1,151 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block breadcrumb %}{% endblock %}
+{% block title %}{% trans "Account Management" %}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <h4 class="card-title mb-0"><i class="bi bi-person-gear me-2"></i>{% trans "Account Management" %}</h4>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <!-- Profile Section -->
+                    <div class="col-md-6 mb-4">
+                        <div class="d-flex align-items-center mb-3">
+                            <i class="bi bi-person-circle display-5 me-3 text-primary"></i>
+                            <div>
+                                <h5 class="mb-1">{{ user.email }}</h5>
+                                <span class="badge {% if user.emailaddress_set.first.verified %}bg-success{% else %}bg-warning text-dark{% endif %}">
+                                    {% if user.emailaddress_set.first.verified %}
+                                        {% trans "Verified" %}
+                                    {% else %}
+                                        {% trans "Unverified" %}
+                                    {% endif %}
+                                </span>
+                            </div>
+                        </div>
+                        {% if not user.emailaddress_set.first.verified %}
+                        <div id="verificationSection">
+                            <button type="button" id="verifyEmailBtn" class="btn btn-info">
+                                <i class="bi bi-envelope-check me-2"></i>{% trans "Verify Email" %}
+                            </button>
+                            <div id="verificationStatus" class="mt-2" style="display: none;">
+                                <div class="alert alert-info">
+                                    <i class="bi bi-info-circle me-2"></i>
+                                    <span id="verificationMessage"></span>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Quick Actions -->
+                    <div class="col-md-6">
+                        <div class="list-group">
+                            <a href="{% url 'account_change_password' %}" class="list-group-item list-group-item-action d-flex align-items-center text-primary">
+                                <i class="bi bi-key me-3"></i>{% trans "Change Password" %}
+                            </a>
+                            <form method="post" action="{% url 'account_logout' %}" class="d-inline">
+                                {% csrf_token %}
+                                <button type="submit" class="list-group-item list-group-item-action d-flex align-items-center text-danger">
+                                    <i class="bi bi-box-arrow-right me-3"></i>{% trans "LogOut" %}
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Account Statistics -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0"><i class="bi bi-graph-up me-2"></i>{% trans "Account Statistics" %}</h5>
+            </div>
+            <div class="card-body">
+                <div class="row g-4">
+                    <div class="col-md-4">
+                        <div class="border rounded p-3 text-center">
+                            <h3 class="mb-1">{{ user.expense_groups.count }}</h3>
+                            <small class="text-muted">Groups Joined</small>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="border rounded p-3 text-center">
+                            <h3 class="mb-1">{{ user.created_groups.count }}</h3>
+                            <small class="text-muted">Groups Created</small>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="border rounded p-3 text-center">
+                            <h3 class="mb-1">{{ user.date_joined|date:"M Y" }}</h3>
+                            <small class="text-muted">Member Since</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.getElementById('verifyEmailBtn')?.addEventListener('click', function() {
+    const btn = this;
+    const statusDiv = document.getElementById('verificationStatus');
+    const messageSpan = document.getElementById('verificationMessage');
+    
+    // Disable button and show loading state
+    btn.disabled = true;
+    btn.innerHTML = '<i class="bi bi-arrow-repeat me-2"></i>Sending...';
+    
+    // Get CSRF token from cookie
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+    
+    fetch('{% url "expenses:send_verification" %}', {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken'),
+            'X-Requested-With': 'XMLHttpRequest',
+            'Content-Type': 'application/json',
+        },
+        credentials: 'same-origin'
+    })
+    .then(response => response.json())
+    .then(data => {
+        // Show success message
+        statusDiv.style.display = 'block';
+        messageSpan.textContent = data.message;
+        statusDiv.querySelector('.alert').className = `alert alert-${data.status}`;
+        
+        // Update button state
+        btn.innerHTML = '<i class="bi bi-envelope-check me-2"></i>Resend Email';
+        btn.disabled = false;
+    })
+    .catch(error => {
+        // Show error message
+        statusDiv.style.display = 'block';
+        messageSpan.textContent = 'Error sending verification email. Please try again.';
+        statusDiv.querySelector('.alert').className = 'alert alert-danger';
+        btn.disabled = false;
+    });
+});
+</script>
+{% endblock %}

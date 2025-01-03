@@ -19,7 +19,7 @@
         <h2>{{ expense.description }}</h2>
     </div>
     <div class="col text-end">
-        {% if expense.paid_by == user %}
+        {% if expense.paid_by == user and not expense.session.ended %}
             <div class="d-flex gap-2 justify-content-end">
                 <a href="{% url 'expenses:update_expense' expense.id %}" class="btn btn-primary">Update Expense</a>
                 <button class="btn btn-danger" onclick="confirmDeleteExpense({{ expense.id }})">Delete Expense</button>

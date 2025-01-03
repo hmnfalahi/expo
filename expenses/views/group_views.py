@@ -16,9 +16,9 @@ from django.utils.decorators import method_decorator
 from ..models import Group
 from ..forms import GroupForm
 from ..services.balance_calculator import calculate_balances
+from ..mixins import EmailVerificationRequiredMixin
 
-
-class DashboardView(LoginRequiredMixin, ListView):
+class DashboardView(EmailVerificationRequiredMixin, LoginRequiredMixin, ListView):
     model = Group
     template_name = 'expenses/dashboard.html'
     context_object_name = 'groups'
@@ -27,7 +27,7 @@ class DashboardView(LoginRequiredMixin, ListView):
         return self.request.user.expense_groups.all()
 
 
-class GroupCreateView(LoginRequiredMixin, CreateView):
+class GroupCreateView(EmailVerificationRequiredMixin, LoginRequiredMixin, CreateView):
     model = Group
     form_class = GroupForm
     template_name = 'expenses/create_group.html'
@@ -46,7 +46,7 @@ class GroupCreateView(LoginRequiredMixin, CreateView):
             return redirect('expenses:dashboard')
 
 
-class GroupDetailView(LoginRequiredMixin, DetailView):
+class GroupDetailView(EmailVerificationRequiredMixin, LoginRequiredMixin, DetailView):
     model = Group
     template_name = 'expenses/group_detail.html'
     context_object_name = 'group'
@@ -65,7 +65,7 @@ class GroupDetailView(LoginRequiredMixin, DetailView):
         return context
 
 
-class JoinGroupView(LoginRequiredMixin, View):
+class JoinGroupView(EmailVerificationRequiredMixin, LoginRequiredMixin, View):
     def get(self, request, join_code):
         try:
             group = Group.objects.get(join_code=join_code)
@@ -80,7 +80,7 @@ class JoinGroupView(LoginRequiredMixin, View):
             return redirect('expenses:dashboard')
 
 
-class RemoveMemberView(LoginRequiredMixin, UserPassesTestMixin, View):
+class RemoveMemberView(EmailVerificationRequiredMixin, LoginRequiredMixin, UserPassesTestMixin, View):
     def post(self, request, group_id, user_id):
         group = get_object_or_404(Group, id=group_id)
         if not self.test_func():
@@ -114,7 +114,7 @@ class RemoveMemberView(LoginRequiredMixin, UserPassesTestMixin, View):
         return self.request.user == group.created_by
 
 
-class RegenerateJoinCodeView(LoginRequiredMixin, UserPassesTestMixin, View):
+class RegenerateJoinCodeView(EmailVerificationRequiredMixin, LoginRequiredMixin, UserPassesTestMixin, View):
     def post(self, request, group_id):
         group = get_object_or_404(Group, id=group_id)
         if not self.test_func():
@@ -131,7 +131,7 @@ class RegenerateJoinCodeView(LoginRequiredMixin, UserPassesTestMixin, View):
         return self.request.user == group.created_by
 
 
-class LeaveGroupView(LoginRequiredMixin, View):
+class LeaveGroupView(EmailVerificationRequiredMixin, LoginRequiredMixin, View):
     def post(self, request, group_id):
         group = get_object_or_404(Group, id=group_id)
         if request.user not in group.members.all():
@@ -147,7 +147,7 @@ class LeaveGroupView(LoginRequiredMixin, View):
 
 
 @method_decorator(csrf_exempt, name='dispatch')
-class UpdateGroupView(LoginRequiredMixin, UserPassesTestMixin, View):
+class UpdateGroupView(EmailVerificationRequiredMixin, LoginRequiredMixin, UserPassesTestMixin, View):
     def post(self, request, group_id):
         group = get_object_or_404(Group, id=group_id)
         if not self.test_func():
@@ -165,7 +165,7 @@ class UpdateGroupView(LoginRequiredMixin, UserPassesTestMixin, View):
         return self.request.user == group.created_by
 
 
-class DeleteGroupView(LoginRequiredMixin, UserPassesTestMixin, View):
+class DeleteGroupView(EmailVerificationRequiredMixin, LoginRequiredMixin, UserPassesTestMixin, View):
     def post(self, request, group_id):
         group = get_object_or_404(Group, id=group_id)
         if not self.test_func():

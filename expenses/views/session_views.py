@@ -12,9 +12,10 @@ from django.contrib.auth.models import User  # Add this import
 from ..models import Group, Session
 from ..forms import SessionForm
 from ..services.balance_calculator import calculate_balances
+from ..mixins import EmailVerificationRequiredMixin
 
 
-class SessionCreateView(LoginRequiredMixin, CreateView):
+class SessionCreateView(EmailVerificationRequiredMixin, LoginRequiredMixin, CreateView):
     model = Session
     form_class = SessionForm
     template_name = 'expenses/create_session.html'
@@ -53,7 +54,7 @@ class SessionCreateView(LoginRequiredMixin, CreateView):
         return context
 
 
-class SessionDetailView(LoginRequiredMixin, DetailView):
+class SessionDetailView(EmailVerificationRequiredMixin, LoginRequiredMixin, DetailView):
     model = Session
     template_name = 'expenses/session_detail.html'
     context_object_name = 'session'
@@ -72,11 +73,11 @@ class SessionDetailView(LoginRequiredMixin, DetailView):
         return context
 
 
-class AddMemberToSessionView(LoginRequiredMixin, UserPassesTestMixin, View):
+class AddMemberToSessionView(EmailVerificationRequiredMixin, LoginRequiredMixin, UserPassesTestMixin, View):
     def post(self, request, session_id, user_id):
         session = get_object_or_404(Session, id=session_id)
         if session.ended:
-            return JsonResponse({'error': 'This session has ended. No further changes can be made.'}, status=400)
+            return JsonResponse({'error': 'Cannot modify an ended session.'}, status=403)
         group = session.group
         if not self.test_func():
             return JsonResponse({'error': 'Unauthorized'}, status=403)
@@ -98,11 +99,11 @@ class AddMemberToSessionView(LoginRequiredMixin, UserPassesTestMixin, View):
         return self.request.user == group.created_by or self.request.user == session.created_by
 
 
-class RemoveMemberFromSessionView(LoginRequiredMixin, UserPassesTestMixin, View):
+class RemoveMemberFromSessionView(EmailVerificationRequiredMixin, LoginRequiredMixin, UserPassesTestMixin, View):
     def post(self, request, session_id, user_id):
         session = get_object_or_404(Session, id=session_id)
         if session.ended:
-            return JsonResponse({'error': 'This session has ended. No further changes can be made.'}, status=400)
+            return JsonResponse({'error': 'Cannot modify an ended session.'}, status=403)
         group = session.group
         if not self.test_func():
             return JsonResponse({'error': 'Unauthorized'}, status=403)
@@ -127,7 +128,7 @@ class RemoveMemberFromSessionView(LoginRequiredMixin, UserPassesTestMixin, View)
         return self.request.user == group.created_by or self.request.user == session.created_by
 
 
-class LeaveSessionView(LoginRequiredMixin, View):
+class LeaveSessionView(EmailVerificationRequiredMixin, LoginRequiredMixin, View):
     def post(self, request, session_id):
         session = get_object_or_404(Session, id=session_id)
         if session.ended:
@@ -146,11 +147,11 @@ class LeaveSessionView(LoginRequiredMixin, View):
         return JsonResponse({'success': True})
 
 
-class DeleteSessionView(LoginRequiredMixin, UserPassesTestMixin, View):
+class DeleteSessionView(EmailVerificationRequiredMixin, LoginRequiredMixin, UserPassesTestMixin, View):
     def post(self, request, session_id):
         session = get_object_or_404(Session, id=session_id)
         if session.ended:
-            return JsonResponse({'error': 'This session has ended. No further changes can be made.'}, status=400)
+            return JsonResponse({'error': 'Cannot delete an ended session.'}, status=403)
         group = session.group
         if not self.test_func():
             return JsonResponse({'error': 'Unauthorized'}, status=403)
@@ -168,7 +169,7 @@ class DeleteSessionView(LoginRequiredMixin, UserPassesTestMixin, View):
         return self.request.user == group.created_by or self.request.user == session.created_by
 
 
-class UpdateSessionView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
+class UpdateSessionView(EmailVerificationRequiredMixin, LoginRequiredMixin, UserPassesTestMixin, UpdateView):
     model = Session
     form_class = SessionForm
     template_name = 'expenses/update_session.html'
@@ -176,7 +177,7 @@ class UpdateSessionView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
     def dispatch(self, request, *args, **kwargs):
         self.session = get_object_or_404(Session, id=self.kwargs['pk'])
         if self.session.ended:
-            messages.warning(request, 'This session has ended. No further changes can be made.')
+            messages.error(request, 'Cannot modify an ended session.')
             return redirect('expenses:session_detail', pk=self.session.id)
         return super().dispatch(request, *args, **kwargs)
 
@@ -198,7 +199,7 @@ class UpdateSessionView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
         return self.request.user == group.created_by or self.request.user == self.session.created_by
 
 
-class EndSessionView(LoginRequiredMixin, UserPassesTestMixin, View):
+class EndSessionView(EmailVerificationRequiredMixin, LoginRequiredMixin, UserPassesTestMixin, View):
     def post(self, request, session_id):
         session = get_object_or_404(Session, id=session_id)
         group = session.group
